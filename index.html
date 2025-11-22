@@ -1,0 +1,559 @@
+&lt;!doctype html&gt;
+&lt;html lang=&quot;id&quot;&gt;
+&lt;head&gt;
+&lt;meta charset=&quot;utf-8&quot;&gt;
+&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width,initial-scale=1&quot;&gt;
+&lt;title&gt;Panel Auto Walk Free — Token Management System&lt;/title&gt;
+&lt;link href=&quot;https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700;800&amp;display=swap&quot; rel=&quot;stylesheet&quot;&gt;
+&lt;style&gt;
+body{background:linear-gradient(120deg,#020617,#07102a 40%,#0b1220 100%);color:#e6eef8;font-family:Poppins,sans-serif;margin:0;padding:0;display:flex;flex-direction:column;align-items:center;min-height:100vh;}
+header{padding:30px;text-align:center;}
+h1{font-size:40px;font-weight:800;letter-spacing:4px;animation:rgbText 6s linear infinite;}
+@keyframes rgbText{0%{color:#ff3b3b}25%{color:#ffdd57}50%{color:#3bffb0}75%{color:#7aa2ff}100%{color:#ff3b3b}}
+.container{max-width:1200px;width:95%;margin:0 auto;}
+.controls{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;transition:all .3s}
+input,select,button{padding:8px;border-radius:6px;border:none;font-size:14px;transition:all .3s}
+button{cursor:pointer;background:linear-gradient(90deg,#06b6d4,#8b5cf6);color:#001;font-weight:700}
+button:hover{transform:scale(1.05)}
+button:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
+textarea{width:100%;height:200px;background:rgba(255,255,255,0.03);color:#e6eef8;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);resize:vertical;outline:none;transition:all .3s;}
+.history-list{max-height:400px;overflow:auto;background:rgba(0,0,0,0.35);padding:10px;border-radius:8px;width:100%;transition:all .3s;margin-top:10px;}
+.history-item{display:flex;justify-content:space-between;align-items:center;padding:10px;margin-bottom:8px;background:linear-gradient(90deg,rgba(255,255,255,0.05),transparent);border-radius:6px;transition:all .5s;opacity:0;border-left:3px solid transparent;}
+.history-item.show{opacity:1;}
+.history-item.fade-out{opacity:0;transition:opacity 2s ease;}
+.history-item.unlimited{border-left-color:#32cd32;}
+.history-item.warning{border-left-color:#ffd700;}
+.history-item.critical{border-left-color:#ff4500;}
+.history-item.expired{border-left-color:#ff0000;background:rgba(255,0,0,0.1);}
+.rainbow-text{animation:rainbow 4s linear infinite}
+@keyframes rainbow{0%{color:#ff3b3b}16%{color:#ffdd57}32%{color:#3bffb0}48%{color:#7aa2ff}64%{color:#ff3b3b}80%{color:#ffdd57}100%{color:#3bffb0}}
+.avatar{width:32px;height:32px;border-radius:50%;margin-right:10px;border:2px solid rgba(255,255,255,0.3);}
+.entry-left{display:flex;align-items:center;gap:10px;flex:1;}
+.entry-info{display:flex;flex-direction:column;gap:2px;}
+.entry-username{font-weight:700;font-size:15px;}
+.entry-token{font-size:11px;color:#888;font-family:monospace;}
+.entry-hwid{font-size:10px;color:#666;font-family:monospace;max-width:200px;overflow:hidden;text-overflow:ellipsis;}
+.entry-right{display:flex;align-items:center;gap:10px;}
+.status-badge{padding:4px 10px;border-radius:12px;font-size:11px;font-weight:700;white-space:nowrap;}
+.badge-unlimited{background:#32cd32;color:#000;}
+.badge-active{background:#3bffb0;color:#000;}
+.badge-warning{background:#ffd700;color:#000;}
+.badge-critical{background:#ff4500;color:#fff;}
+.badge-expired{background:#ff0000;color:#fff;}
+.delete-btn{padding:5px 12px;background:#ff4444;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:12px;font-weight:700;}
+.delete-btn:hover{background:#ff6666;}
+#notif{position:fixed;bottom:10px;right:10px;padding:12px 20px;background:linear-gradient(90deg,#052e11,#083b21);border-radius:8px;display:none;color:#fff;transition:all .3s;box-shadow:0 4px 12px rgba(0,0,0,0.5);z-index:1000;}
+#notif.error{background:linear-gradient(90deg,#4a0e0e,#7a1414);}
+#statusPanel{margin-bottom:10px;padding:10px;background:rgba(255,255,255,0.05);border-radius:6px;font-size:13px;color:#aaa;}
+.section{background:rgba(255,255,255,0.03);padding:20px;border-radius:10px;margin-bottom:20px;border:1px solid rgba(255,255,255,0.1);}
+.section-title{font-size:18px;font-weight:700;margin-bottom:15px;color:#7aa2ff;}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:15px;margin-bottom:20px;}
+.stat-card{background:rgba(255,255,255,0.05);padding:15px;border-radius:8px;text-align:center;border:1px solid rgba(255,255,255,0.1);}
+.stat-value{font-size:28px;font-weight:800;color:#3bffb0;}
+.stat-label{font-size:12px;color:#888;margin-top:5px;}
+.input-group{display:flex;gap:10px;align-items:end;margin-bottom:15px;flex-wrap:wrap;}
+.input-wrapper{flex:1;min-width:150px;}
+.input-label{font-size:12px;color:#aaa;margin-bottom:5px;display:block;}
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;header&gt;
+&lt;h1 class=&quot;rainbow-text&quot;&gt;PANEL Token Management System&lt;/h1&gt;
+&lt;/header&gt;
+
+&lt;div class=&quot;container&quot;&gt;
+&lt;!-- GitHub Configuration --&gt;
+&lt;div class=&quot;section&quot;&gt;
+&lt;div class=&quot;section-title&quot;&gt;🔧 GitHub Configuration&lt;/div&gt;
+&lt;div class=&quot;controls&quot;&gt;
+&lt;input id=&quot;owner&quot; type=&quot;text&quot; placeholder=&quot;Owner&quot; value=&quot;Bejirrr&quot;&gt;
+&lt;input id=&quot;repo&quot; type=&quot;text&quot; placeholder=&quot;Repo&quot; value=&quot;tessz&quot;&gt;
+&lt;input id=&quot;path&quot; type=&quot;text&quot; placeholder=&quot;Path&quot; value=&quot;whitelist.txt&quot;&gt;
+&lt;input id=&quot;token&quot; type=&quot;password&quot; placeholder=&quot;GitHub Token&quot;&gt;
+&lt;button id=&quot;btnLoad&quot;&gt;📥 Load File&lt;/button&gt;
+&lt;button id=&quot;btnSave&quot;&gt;💾 Save to GitHub&lt;/button&gt;
+&lt;/div&gt;
+&lt;div id=&quot;statusPanel&quot;&gt;⏳ Ready to load...&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;!-- Statistics --&gt;
+&lt;div class=&quot;stats-grid&quot;&gt;
+&lt;div class=&quot;stat-card&quot;&gt;
+&lt;div class=&quot;stat-value&quot; id=&quot;totalUsers&quot;&gt;0&lt;/div&gt;
+&lt;div class=&quot;stat-label&quot;&gt;Total Users&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;stat-card&quot;&gt;
+&lt;div class=&quot;stat-value&quot; id=&quot;activeUsers&quot;&gt;0&lt;/div&gt;
+&lt;div class=&quot;stat-label&quot;&gt;Active Users&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;stat-card&quot;&gt;
+&lt;div class=&quot;stat-value&quot; id=&quot;expiredUsers&quot;&gt;0&lt;/div&gt;
+&lt;div class=&quot;stat-label&quot;&gt;Expired Users&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;stat-card&quot;&gt;
+&lt;div class=&quot;stat-value&quot; id=&quot;unlimitedUsers&quot;&gt;0&lt;/div&gt;
+&lt;div class=&quot;stat-label&quot;&gt;Unlimited Users&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;!-- Add New User --&gt;
+&lt;div class=&quot;section&quot;&gt;
+&lt;div class=&quot;section-title&quot;&gt;➕ Add New User&lt;/div&gt;
+&lt;div style=&quot;display:grid;grid-template-columns:1fr 2fr 1fr 150px;gap:12px;margin-bottom:15px;align-items:end;&quot;&gt;
+&lt;div style=&quot;display:flex;flex-direction:column;&quot;&gt;
+&lt;label class=&quot;input-label&quot;&gt;Username&lt;/label&gt;
+&lt;input id=&quot;newUsername&quot; type=&quot;text&quot; placeholder=&quot;Enter username&quot; style=&quot;width:100%;padding:10px;box-sizing:border-box;&quot;&gt;
+&lt;/div&gt;
+&lt;div style=&quot;display:flex;flex-direction:column;&quot;&gt;
+&lt;label class=&quot;input-label&quot;&gt;Token&lt;/label&gt;
+&lt;input id=&quot;newToken&quot; type=&quot;text&quot; placeholder=&quot;Auto-generate or custom&quot; style=&quot;width:100%;padding:10px;box-sizing:border-box;&quot;&gt;
+&lt;/div&gt;
+&lt;div style=&quot;display:flex;flex-direction:column;&quot;&gt;
+&lt;label class=&quot;input-label&quot;&gt;HWID&lt;/label&gt;
+&lt;input id=&quot;newHWID&quot; type=&quot;text&quot; placeholder=&quot;User&#39;s HWID&quot; style=&quot;width:100%;padding:10px;box-sizing:border-box;&quot;&gt;
+&lt;/div&gt;
+&lt;div style=&quot;display:flex;flex-direction:column;&quot;&gt;
+&lt;label class=&quot;input-label&quot;&gt;Duration&lt;/label&gt;
+&lt;select id=&quot;ttlSelect&quot; style=&quot;width:100%;padding:10px;box-sizing:border-box;&quot;&gt;
+&lt;option value=&quot;2m&quot;&gt;2 minutes&lt;/option&gt;
+&lt;option value=&quot;5m&quot;&gt;5 minutes&lt;/option&gt;
+&lt;option value=&quot;1h&quot;&gt;1 hour&lt;/option&gt;
+&lt;option value=&quot;6h&quot;&gt;6 hours&lt;/option&gt;
+&lt;option value=&quot;12h&quot;&gt;12 hours&lt;/option&gt;
+&lt;option value=&quot;1d&quot;&gt;1 day&lt;/option&gt;
+&lt;option value=&quot;2d&quot;&gt;2 days&lt;/option&gt;
+&lt;option value=&quot;3d&quot;&gt;3 days&lt;/option&gt;
+&lt;option value=&quot;7d&quot; selected&gt;7 days&lt;/option&gt;
+&lt;option value=&quot;14d&quot;&gt;14 days&lt;/option&gt;
+&lt;option value=&quot;30d&quot;&gt;30 days&lt;/option&gt;
+&lt;option value=&quot;unlimited&quot;&gt;Unlimited&lt;/option&gt;
+&lt;/select&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div style=&quot;display:grid;grid-template-columns:1fr 1fr;gap:10px;&quot;&gt;
+&lt;button id=&quot;btnGenerate&quot; style=&quot;background:linear-gradient(90deg,#8b5cf6,#06b6d4);padding:12px;&quot;&gt;🎲 Generate Token&lt;/button&gt;
+&lt;button id=&quot;btnAdd&quot; style=&quot;padding:12px;&quot;&gt;➕ Add User&lt;/button&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;!-- User List --&gt;
+&lt;div class=&quot;section&quot;&gt;
+&lt;div class=&quot;section-title&quot;&gt;👥 User Management&lt;/div&gt;
+&lt;div class=&quot;history-list&quot; id=&quot;entriesList&quot;&gt;&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;!-- Raw Data View --&gt;
+&lt;div class=&quot;section&quot;&gt;
+&lt;div class=&quot;section-title&quot;&gt;📄 Raw Data (whitelist.txt format)&lt;/div&gt;
+&lt;textarea id=&quot;editor&quot; placeholder=&quot;username --token --hwid --expires&quot;&gt;&lt;/textarea&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;div id=&quot;notif&quot;&gt;&lt;/div&gt;
+
+&lt;script&gt;
+const $ = id =&gt; document.getElementById(id);
+const ownerEl=$(&#39;owner&#39;), repoEl=$(&#39;repo&#39;), pathEl=$(&#39;path&#39;), tokenEl=$(&#39;token&#39;), editor=$(&#39;editor&#39;), entriesList=$(&#39;entriesList&#39;), statusPanel=$(&#39;statusPanel&#39;);
+const btnLoad=$(&#39;btnLoad&#39;), btnAdd=$(&#39;btnAdd&#39;), btnSave=$(&#39;btnSave&#39;), btnGenerate=$(&#39;btnGenerate&#39;);
+const newUsername=$(&#39;newUsername&#39;), newToken=$(&#39;newToken&#39;), newHWID=$(&#39;newHWID&#39;), ttlSelect=$(&#39;ttlSelect&#39;), notif=$(&#39;notif&#39;);
+
+function toast(msg, isError = false){ 
+  notif.textContent=msg; 
+  notif.className = isError ? &#39;error&#39; : &#39;&#39;;
+  notif.style.display=&#39;block&#39;; 
+  setTimeout(()=&gt;notif.style.display=&#39;none&#39;,4000); 
+}
+
+function parseTTL(ttl){ 
+  if(ttl===&#39;unlimited&#39;) return null; 
+  if(ttl.endsWith(&#39;m&#39;)) return Date.now()+parseInt(ttl)*60000; 
+  if(ttl.endsWith(&#39;h&#39;)) return Date.now()+parseInt(ttl)*3600000; 
+  if(ttl.endsWith(&#39;d&#39;)) return Date.now()+parseInt(ttl)*24*3600000; 
+  return null; 
+}
+
+function ttlLabel(ttl){ 
+  if(ttl===&#39;unlimited&#39;) return &#39;Unlimited&#39;; 
+  if(ttl.endsWith(&#39;m&#39;)) return ttl.replace(&#39;m&#39;,&#39; min&#39;); 
+  if(ttl.endsWith(&#39;h&#39;)) return ttl.replace(&#39;h&#39;,&#39; hour&#39;); 
+  if(ttl.endsWith(&#39;d&#39;)) return ttl.replace(&#39;d&#39;,&#39; day&#39;); 
+  return ttl; 
+}
+
+function msToTime(ms){
+  const t=Math.max(0,Math.floor(ms/1000)); 
+  const d=Math.floor(t/86400); 
+  const h=Math.floor((t%86400)/3600); 
+  const m=Math.floor((t%3600)/60); 
+  const s=t%60; 
+  let str=&#39;&#39;; 
+  if(d&gt;0)str+=d+&#39;d &#39;; 
+  if(h&gt;0)str+=h+&#39;h &#39;; 
+  if(m&gt;0)str+=m+&#39;m &#39;; 
+  str+=s+&#39;s&#39;; 
+  return str; 
+}
+
+function generateToken(){
+  const chars = &#39;ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789&#39;;
+  const segments = [];
+  for(let i=0; i&lt;4; i++){
+    let segment = &#39;&#39;;
+    for(let j=0; j&lt;5; j++){
+      segment += chars[Math.floor(Math.random()*chars.length)];
+    }
+    segments.push(segment);
+  }
+  return segments.join(&#39;-&#39;);
+}
+
+let entriesCache=[];
+let updateIntervals = [];
+
+function updateStats(){
+  const now = Date.now();
+  let total = entriesCache.length;
+  let active = 0, expired = 0, unlimited = 0;
+  
+  entriesCache.forEach(e =&gt; {
+    if(!e.expiresAt){
+      unlimited++;
+      active++;
+    } else if(e.expiresAt &gt; now){
+      active++;
+    } else {
+      expired++;
+    }
+  });
+  
+  $(&#39;totalUsers&#39;).textContent = total;
+  $(&#39;activeUsers&#39;).textContent = active;
+  $(&#39;expiredUsers&#39;).textContent = expired;
+  $(&#39;unlimitedUsers&#39;).textContent = unlimited;
+}
+
+function parseEntry(line){
+  if(!line.trim()) return null;
+  const parts = line.split(&#39; --&#39;);
+  if(parts.length &lt; 4) return null;
+  
+  const username = parts[0].trim();
+  const token = parts[1].trim();
+  const hwid = parts[2].trim();
+  const exp = parts[3].trim();
+  
+  let expiresAt = exp === &#39;unlimited&#39; ? null : Number(exp);
+  
+  return {
+    username,
+    token,
+    hwid,
+    value: line,
+    ttlVal: exp,
+    expiresAt
+  };
+}
+
+function renderEntries(){
+  // Clear intervals
+  updateIntervals.forEach(i =&gt; clearInterval(i));
+  updateIntervals = [];
+  
+  entriesList.innerHTML=&#39;&#39;;
+  if(entriesCache.length===0){ 
+    entriesList.innerHTML=&#39;&lt;div style=&quot;text-align:center;padding:20px;color:#666;&quot;&gt;No users in whitelist&lt;/div&gt;&#39;; 
+    updateStats();
+    return; 
+  }
+  
+  const now = Date.now();
+  entriesCache.forEach((e, idx)=&gt;{
+    const div=document.createElement(&#39;div&#39;); 
+    div.className=&#39;history-item&#39;;
+    
+    const isExpired = e.expiresAt &amp;&amp; e.expiresAt &lt;= now;
+    const isUnlimited = !e.expiresAt;
+    const timeLeft = e.expiresAt ? e.expiresAt - now : 0;
+    const daysLeft = Math.floor(timeLeft / 86400000);
+    
+    if(isUnlimited) div.classList.add(&#39;unlimited&#39;);
+    else if(isExpired) div.classList.add(&#39;expired&#39;);
+    else if(daysLeft &lt;= 1) div.classList.add(&#39;critical&#39;);
+    else if(daysLeft &lt;= 7) div.classList.add(&#39;warning&#39;);
+    
+    setTimeout(()=&gt;div.classList.add(&#39;show&#39;),50 * idx);
+    
+    const avatarUrl=`https://ui-avatars.com/api/?name=${e.username}&amp;background=random&amp;size=32`;
+    
+    const statusBadge = document.createElement(&#39;span&#39;);
+    statusBadge.className = &#39;status-badge&#39;;
+    
+    const renewBtn = document.createElement(&#39;button&#39;);
+    renewBtn.className = &#39;delete-btn&#39;;
+    renewBtn.style.background = &#39;#3b82f6&#39;;
+    renewBtn.textContent = &#39;🔄 Renew&#39;;
+    renewBtn.onclick = () =&gt; renewEntry(idx);
+    
+    const deleteBtn = document.createElement(&#39;button&#39;);
+    deleteBtn.className = &#39;delete-btn&#39;;
+    deleteBtn.textContent = &#39;🗑️ Delete&#39;;
+    deleteBtn.onclick = () =&gt; deleteEntry(idx);
+    
+    div.innerHTML=`
+      &lt;div class=&quot;entry-left&quot;&gt;
+        &lt;img src=&quot;${avatarUrl}&quot; class=&quot;avatar&quot;&gt;
+        &lt;div class=&quot;entry-info&quot;&gt;
+          &lt;div class=&quot;entry-username&quot;&gt;${e.username}&lt;/div&gt;
+          &lt;div class=&quot;entry-token&quot;&gt;🔑 ${e.token.substring(0,20)}...&lt;/div&gt;
+          &lt;div class=&quot;entry-hwid&quot;&gt;💻 ${e.hwid}&lt;/div&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div class=&quot;entry-right&quot;&gt;
+      &lt;/div&gt;
+    `;
+    
+    div.querySelector(&#39;.entry-right&#39;).appendChild(statusBadge);
+    div.querySelector(&#39;.entry-right&#39;).appendChild(renewBtn);
+    div.querySelector(&#39;.entry-right&#39;).appendChild(deleteBtn);
+    entriesList.appendChild(div);
+    
+    if(!e.expiresAt){
+      statusBadge.className = &#39;status-badge badge-unlimited&#39;;
+      statusBadge.textContent = &#39;♾️ Unlimited&#39;;
+    } else {
+      updateCountdown(e, statusBadge, div);
+      const interval = setInterval(() =&gt; updateCountdown(e, statusBadge, div), 1000);
+      updateIntervals.push(interval);
+    }
+  });
+  
+  updateStats();
+}
+
+function updateCountdown(e, badge, div){
+  const remaining = e.expiresAt - Date.now();
+  
+  if(remaining &lt;= 0){
+    badge.className = &#39;status-badge badge-expired&#39;;
+    badge.textContent = &#39;❌ EXPIRED&#39;;
+    div.classList.add(&#39;expired&#39;);
+    return;
+  }
+  
+  const daysLeft = Math.floor(remaining / 86400000);
+  const hoursLeft = Math.floor((remaining % 86400000) / 3600000);
+  const minutesLeft = Math.floor((remaining % 3600000) / 60000);
+  
+  if(daysLeft &gt; 7){
+    badge.className = &#39;status-badge badge-active&#39;;
+    badge.textContent = `✓ ${daysLeft}d ${hoursLeft}h`;
+  } else if(daysLeft &gt; 1){
+    badge.className = &#39;status-badge badge-warning&#39;;
+    badge.textContent = `⚠️ ${daysLeft}d ${hoursLeft}h`;
+  } else if(daysLeft === 1){
+    badge.className = &#39;status-badge badge-warning&#39;;
+    badge.textContent = `⚠️ 1d ${hoursLeft}h`;
+  } else if(hoursLeft &gt; 0){
+    badge.className = &#39;status-badge badge-critical&#39;;
+    badge.textContent = `🚨 ${hoursLeft}h ${minutesLeft}m`;
+  } else {
+    badge.className = &#39;status-badge badge-critical&#39;;
+    badge.textContent = `🚨 ${minutesLeft}m`;
+  }
+}
+
+function deleteEntry(index){
+  if(confirm(`Delete user &quot;${entriesCache[index].username}&quot;?`)){
+    entriesCache.splice(index, 1);
+    editor.value = entriesCache.map(e=&gt;e.value).join(&#39;\n&#39;);
+    renderEntries();
+    toast(&#39;✓ User deleted&#39;);
+    saveFile();
+  }
+}
+
+function renewEntry(index){
+  const user = entriesCache[index];
+  const durations = [
+    {label: &#39;7 Days&#39;, value: &#39;7d&#39;},
+    {label: &#39;14 Days&#39;, value: &#39;14d&#39;},
+    {label: &#39;30 Days&#39;, value: &#39;30d&#39;},
+    {label: &#39;60 Days&#39;, value: &#39;60d&#39;},
+    {label: &#39;90 Days&#39;, value: &#39;90d&#39;},
+    {label: &#39;Unlimited&#39;, value: &#39;unlimited&#39;}
+  ];
+  
+  let options = durations.map((d, i) =&gt; `${i+1}. ${d.label}`).join(&#39;\n&#39;);
+  let choice = prompt(`Renew &quot;${user.username}&quot;\n\nSelect duration:\n${options}\n\nEnter number (1-${durations.length}):`, &#39;3&#39;);
+  
+  if(choice){
+    let idx = parseInt(choice) - 1;
+    if(idx &gt;= 0 &amp;&amp; idx &lt; durations.length){
+      const selectedDuration = durations[idx];
+      const newExp = parseTTL(selectedDuration.value);
+      const newExpStr = newExp || &#39;unlimited&#39;;
+      
+      // Update entry
+      entriesCache[index].expiresAt = newExp;
+      entriesCache[index].ttlVal = selectedDuration.value;
+      entriesCache[index].value = `${user.username} --${user.token} --${user.hwid} --${newExpStr}`;
+      
+      editor.value = entriesCache.map(e=&gt;e.value).join(&#39;\n&#39;);
+      renderEntries();
+      toast(`✓ ${user.username} renewed for ${selectedDuration.label}`);
+      saveFile();
+    } else {
+      toast(&#39;✗ Invalid selection&#39;, true);
+    }
+  }
+}
+
+async function loadFile(){
+  const owner=ownerEl.value.trim(), repo=repoEl.value.trim(), path=pathEl.value.trim();
+  if(!owner||!repo||!path) return toast(&#39;Owner/Repo/Path required&#39;, true);
+  
+  btnLoad.disabled = true;
+  btnLoad.textContent = &#39;⏳ Loading...&#39;;
+  
+  try{
+    statusPanel.textContent = &#39;⏳ Loading whitelist.txt from GitHub...&#39;;
+    const r=await fetch(`https://raw.githubusercontent.com/${owner}/${repo}/main/${path}`);
+    if(!r.ok) throw new Error(&#39;Failed to load file: &#39;+r.status);
+    const raw=await r.text();
+    editor.value=raw;
+    
+    entriesCache=raw.split(/\r?\n/)
+      .map(l =&gt; parseEntry(l))
+      .filter(Boolean);
+    
+    renderEntries();
+    statusPanel.textContent = `✓ Loaded ${entriesCache.length} users from GitHub`;
+    toast(&#39;✓ File loaded successfully&#39;);
+    updateAutoRemoveStatus();
+  }catch(e){ 
+    toast(&#39;✗ &#39; + e.message, true); 
+    statusPanel.textContent = &#39;✗ Failed to load file&#39;;
+  } finally {
+    btnLoad.disabled = false;
+    btnLoad.textContent = &#39;📥 Load File&#39;;
+  }
+}
+
+async function saveFile(){
+  const owner=ownerEl.value.trim(), repo=repoEl.value.trim(), path=pathEl.value.trim(), token=tokenEl.value.trim();
+  if(!owner||!repo||!path||!token) return toast(&#39;Owner/Repo/Path/Token required&#39;, true);
+  
+  btnSave.disabled = true;
+  btnSave.textContent = &#39;⏳ Saving...&#39;;
+  statusPanel.textContent = &#39;⏳ Saving to GitHub...&#39;;
+  
+  try{
+    const curResp=await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+      headers:{&#39;Authorization&#39;:&#39;token &#39;+token}
+    });
+    const cur=await curResp.json();
+    const sha=cur.sha;
+    const contentB64=btoa(unescape(encodeURIComponent(editor.value)));
+    
+    const putResp=await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`,{
+      method:&#39;PUT&#39;,
+      headers:{&#39;Authorization&#39;:&#39;token &#39;+token,&#39;Content-Type&#39;:&#39;application/json&#39;},
+      body:JSON.stringify({message:&#39;Update whitelist.txt&#39;,content:contentB64,sha})
+    });
+    
+    if(!putResp.ok) throw new Error(&#39;Failed to save: &#39;+putResp.status);
+    toast(&#39;✓ Saved to GitHub successfully&#39;);
+    statusPanel.textContent = &#39;✓ Successfully saved to GitHub&#39;;
+  }catch(e){ 
+    toast(&#39;✗ &#39; + e.message, true); 
+    statusPanel.textContent = &#39;✗ Failed to save&#39;;
+  } finally {
+    btnSave.disabled = false;
+    btnSave.textContent = &#39;💾 Save to GitHub&#39;;
+  }
+}
+
+btnGenerate.onclick = () =&gt; {
+  newToken.value = generateToken();
+  toast(&#39;✓ Token generated&#39;);
+};
+
+btnAdd.onclick = async () =&gt; {
+  const username = newUsername.value.trim();
+  const token = newToken.value.trim();
+  const hwid = newHWID.value.trim();
+  const ttl = ttlSelect.value;
+  
+  if (!username || !token || !hwid) return toast(&#39;All fields are required&#39;, true);
+  
+  // Check duplicate username
+  if(entriesCache.some(e =&gt; e.username === username)){
+    return toast(&#39;Username already exists&#39;, true);
+  }
+  
+  const exp = parseTTL(ttl);
+  const expStr = exp || &#39;unlimited&#39;;
+  
+  const entry = {
+    username,
+    token,
+    hwid,
+    value: `${username} --${token} --${hwid} --${expStr}`,
+    ttlVal: ttl,
+    expiresAt: exp
+  };
+  
+  entriesCache.push(entry);
+  editor.value = entriesCache.map(e=&gt;e.value).join(&#39;\n&#39;);
+  
+  renderEntries();
+  newUsername.value = &#39;&#39;;
+  newToken.value = &#39;&#39;;
+  newHWID.value = &#39;&#39;;
+  toast(&#39;✓ User added successfully&#39;);
+  
+  await saveFile();
+};
+
+async function updateAutoRemoveStatus() {
+  const owner = ownerEl.value.trim();
+  const repo = repoEl.value.trim();
+  const path = pathEl.value.trim();
+  if (!owner || !repo || !path) return;
+
+  try {
+    const resp = await fetch(`https://api.github.com/repos/${owner}/${repo}/commits?path=${path}&amp;per_page=1`);
+    if (!resp.ok) return;
+    const data = await resp.json();
+    if (data.length === 0) return;
+    
+    const commit = data[0];
+    const commitDate = new Date(commit.commit.author.date);
+    const now = new Date();
+    const diffMin = Math.floor((now - commitDate) / 60000);
+    
+    if(diffMin &lt; 60){
+      statusPanel.textContent = `🔄 Last update: ${diffMin} min ago`;
+    } else {
+      const diffHour = Math.floor(diffMin / 60);
+      statusPanel.textContent = `🔄 Last update: ${diffHour} hour(s) ago`;
+    }
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+btnLoad.onclick=loadFile; 
+btnSave.onclick=saveFile;
+
+// Auto-refresh status
+setInterval(updateAutoRemoveStatus, 30000);
+setInterval(() =&gt; {
+  if(entriesCache.length &gt; 0) renderEntries();
+}, 60000);
+
+// Initial load attempt
+setTimeout(loadFile, 500);
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
